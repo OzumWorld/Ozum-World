@@ -142,6 +142,7 @@ footer {
 
 .section {
   text-align: center;
+  color: #00446a;
   background-color: rgba(255, 248, 230, 0.85);
   border: 1px solid #d8c89a;
   padding: 2rem 1.5rem;
@@ -182,7 +183,7 @@ footer {
   max-width: 90%;
 }
 .section__text {
-  color: #dab641; /* un dorado visible */
+  color: #0085ad; /* un dorado visible */
   transition: color 0.3s ease;
 }
 
@@ -568,6 +569,55 @@ li {
   background-color: rgba(255, 255, 230, 0.05);
 }
 
+/* --- Grupo de checks --- */
+.form__legend {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+/* Quita rarezas del fieldset por defecto */
+.form__options {
+  border: 0;
+  margin: 0;
+  padding: 0;
+
+  /* grid fluido */
+  display: grid;
+  grid-template-columns: 1fr 1fr;   /* 2 columnas en pantallas medianas+ */
+  gap: 12px 24px;
+}
+
+/* Cada opción: checkbox + texto alineados y con buen área táctil */
+.form__options > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.2;
+  cursor: pointer;
+
+  /* área táctil cómoda en móvil */
+  padding: 8px 6px;
+  border-radius: 6px;
+}
+
+.form__options input[type="checkbox"] {
+  flex: 0 0 auto;     /* no se estira */
+  width: 18px;
+  height: 18px;
+}
+
+/* Mobile-first: 1 columna en celular */
+@media (max-width: 600px) {
+  .form__options {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Por si algún estilo heredado fija anchos */
+.form__options, .form__options * {
+  max-width: 100%;
+}
+
 
 @keyframes aura {
   0%, 100% {
@@ -594,16 +644,16 @@ li {
   }
 }
 @media (max-width: 768px) {
-  .section__title,
+  .section__title, 
   .section__text {
     font-size: 1rem;
     padding: 0 1rem;
   }
-  @media (max-width: 768px) {
-    .footer__img {
-      max-width: 90px;
-    }
-  
+@media (max-width: 768px) {
+  .footer__img {
+    max-width: 90px;
+  }
+
     .footer p {
       font-size: 0.9rem;
     }
@@ -785,4 +835,3 @@ img {
   padding: 0 1rem;
   box-sizing: border-box;
 }
-
