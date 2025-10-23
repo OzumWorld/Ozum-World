@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Criaturas — Sistema Elemental</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script defer src="./js/include-header-footer.js"></script>
+  <script type="module" src="js/layout.js"></script>
+
+
+  <style>
+    :root{--bg:#0f1f3a;--bg-2:#14284d;--paper:#efe0b8;--ink-body:#eef4ff;--ink-card:#3b2b16;--line:#2b416b;--yellow:#f6cd4c;--yellow-2:#f2b820;--yellow-ink:#231803}
+    html,body{margin:0;background:var(--bg);color:var(--ink-body);font-family:ui-serif,Georgia,serif}
+    header{ padding:18px 20px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,var(--bg-2),var(--bg)); }
+    h1{margin:0;font-size:28px}
+    .sub{margin:6px 0 0;opacity:.85;font-size:14px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 0}
+    .chip{padding:8px 12px;border:1px solid #a47c0a;border-radius:999px;background:var(--yellow);color:var(--yellow-ink);font-weight:650;cursor:pointer}
+    .chip.active,.chip:hover{background:var(--yellow-2)}
+    .search{flex:1;min-width:200px}
+    .search input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#0c1b33;color:var(--ink-body)}
+    main{padding:18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .card{background:var(--paper);border:1px solid #f6cd4c;border-radius:14px;box-shadow:0 1px 0 #d2bd90 inset, 0 4px 18px rgba(0,0,0,.18);color:var(--ink-card);overflow:hidden}
+    .thumb{position:relative;aspect-ratio:3/4;background:#e9dfc3}
+    .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .meta{padding:10px 12px}
+    .name{font-size:18px;font-weight:800;color:var(--ink-card)}
+    .pill{display:inline-block;margin-top:6px;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid #bda476;background:#f6edd2;color:#3b2b16}
+    .btn{margin-top:10px;font-size:14px;border:1px solid #a47c0a;background:var(--yellow);color:var(--yellow-ink);padding:7px 10px;border-radius:10px;cursor:pointer}
+    footer{ padding:14px 20px; color:#c6d3ff; border-top:1px solid var(--line); /* ayuda a “verlo” mientras probás */ }
+    dialog{border:none;border-radius:16px;max-width:560px;width:clamp(320px,80vw,560px);padding:0;box-shadow:0 12px 40px rgba(0,0,0,.45)}
+    .dlg-head{padding:14px 16px;background:var(--paper);border-bottom:1px solid #d3bf97;color:var(--ink-card)}
+    .dlg-body{padding:16px;background:#fffdf5;color:#2a2218}
+    .dlg-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;background:#fffdf5;border-top:1px solid #eedfb9}
+    .x{border:1px solid #a47c0a;background:var(--yellow);color:var(--yellow-ink);padding:7px 12px;border-radius:10px;cursor:pointer}
+    .empty{margin:18px auto;color:#b7c4e6;text-align:center}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Criaturas · Sistema Elemental</h1>
+    <div class="sub">Filtrá por elemento o buscá por nombre. Click en “Ver mensaje”.</div>
+    <div class="controls">
+      <div class="chip active" data-filter="todos">Todos</div>
+      <div class="chip" data-filter="Fuego">🔥 Fuego</div>
+      <div class="chip" data-filter="Agua">🌊 Agua</div>
+      <div class="chip" data-filter="Madera">🌳 Madera</div>
+      <div class="chip" data-filter="Tierra">🪨 Tierra</div>
+      <div class="chip" data-filter="Metal">⚙️ Metal</div>
+      <div class="chip" data-filter="Híbridos">☯ Híbridos</div>
+      <div class="search"><input id="q" type="search" placeholder="Buscar por nombre…"/></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="cards" class="grid" aria-live="polite"></section>
+    <p id="empty" class="empty" hidden>— No hay resultados para ese filtro/búsqueda —</p>
+  </main>
+
+  <!-- Modal -->
+  <dialog id="dlg">
+    <div class="dlg-head">
+      <h3 class="dlg-name" id="dlgName">Nombre</h3>
+      <div class="dlg-el" id="dlgEl">Elemento</div>
+    </div>
+    <div class="dlg-body"><p class="dlg-msg" id="dlgMsg"></p></div>
+    <div class="dlg-actions"><button class="x" onclick="dlg.close()">Cerrar</button></div>
+  </dialog>
+
+  <script>
+    const DATA = [
+      // 🔥 FUEGO
+      {id:"eilen", nombre:"Eilen", elemento:"Fuego", mensaje:"He caminado sobre las brasas para recordar que el fuego no hiere al corazón sincero. Mi llama es prueba y renacimiento.", img:"imagenes/eilen.png"},
+      {id:"kokoro", nombre:"Kokoro", elemento:"Fuego", mensaje:"He ardido mil veces y cada una renací más sabia. No temas al fin, es solo el comienzo de otra luz.", img:"imagenes/kokoro.png"},
+      {id:"velm", nombre:"Velm", elemento:"Fuego", mensaje:"Soy la llama que observa todos los rostros del alma. Cada emoción que aceptas, se transforma en alas.", img:"imagenes/velm.png"},
+      {id:"luminaris", nombre:"Luminaris", elemento:"Fuego", mensaje:"Soy la chispa que corre por los mundos. Donde hay risa y coraje, el fuego se enciende sin destruir.", img:"imagenes/luminaris.png"},
+      {id:"draco", nombre:"Draco", elemento:"Fuego", mensaje:"Custodio la brasa antigua. Con disciplina y juego, el poder se vuelve guía y no tormenta.", img:"imagenes/draco.png"},
+
+      // 🌊 AGUA
+      {id:"nael", nombre:"Nael", elemento:"Agua", mensaje:"En cada gota vive un recuerdo del origen. Escucha al agua, y sabrás quién eres.", img:"imagenes/nael2.png"},
+      {id:"yul", nombre:"Yul", elemento:"Agua", mensaje:"Soy la voz que se mueve entre los silencios. En mi fluir habitan tus palabras no dichas.", img:"imagenes/yul.png"},
+      {id:"aniwaniwa", nombre:"Aniwaniwa", elemento:"Agua", mensaje:"Nací del abismo para iluminar lo invisible. Donde no hay forma, llevo el resplandor.", img:"imagenes/medusa.png"},
+      {id:"tadrim", nombre:"Tadrim", elemento:"Agua", mensaje:"Mis raíces beben del mar. Soy puente entre lo líquido y lo vivo.", img:"imagenes/tadrim2.png"},
+      {id:"lihari", nombre:"Lihari", elemento:"Agua", mensaje:"El agua me enseña a esperar sin detenerme. Soy reflejo de lo que no se puede nombrar.", img:"imagenes/lihari2.png"},
+
+      // 🌳 MADERA
+      {id:"floria", nombre:"Floria", elemento:"Madera", mensaje:"Florezco en el conocimiento. Quien honra la raíz, sostiene la eternidad.", img:"imagenes/floria2.png"},
+      {id:"zerrac", nombre:"Zerrac", elemento:"Madera", mensaje:"Guardián del bosque y del instinto. La astucia es mi canto, la ternura mi fuego.", img:"imagenes/zerrac.png"},
+      {id:"elunrince", nombre:"Elunrínce", elemento:"Madera", mensaje:"Danza conmigo y el bosque recordará su música. Cada paso tuyo hace brotar la vida.", img:"imagenes/elunrince.png"},
+      {id:"pakshi", nombre:"Pakshi", elemento:"Madera", mensaje:"Traigo el mensaje del viento entre ramas antiguas. Escucha, y el aire te enseñará a volar.", img:"imagenes/pakshi.png"},
+      {id:"toriya", nombre:"Toriya", elemento:"Madera", mensaje:"Soy la corriente invisible del pensamiento. Soplo en tus ideas cuando el corazón se abre.", img:"imagenes/toriya.png"},
+
+      // 🪨 TIERRA
+      {id:"jord", nombre:"Jord", elemento:"Tierra", mensaje:"Soy la piedra que sonríe. Lo simple es eterno.", img:"imagenes/jord.png"},
+      {id:"erde", nombre:"Erde", elemento:"Tierra", mensaje:"Lo que sostiene también recuerda. En mí duermen las historias del mundo.", img:"imagenes/erde.png"},
+      {id:"nira", nombre:"Nira", elemento:"Tierra", mensaje:"Llevo en mi cuerpo la geometría del tiempo. Cada grieta es un mapa hacia el origen.", img:"imagenes/nira2.png"},
+      {id:"ophius", nombre:"Ophius", elemento:"Tierra", mensaje:"Soy el ciclo que se devora y se renueva. En el fin encuentro el comienzo.", img:"imagenes/ophius.png"},
+      {id:"bu", nombre:"Bu", elemento:"Tierra", mensaje:"Yo soy la raíz que canta bajo los mundos. Todo lo que muere vuelve a mí para florecer.", img:"imagenes/bu.png"},
+
+      // ⚙️ METAL
+      {id:"zuma", nombre:"Zuma", elemento:"Metal", mensaje:"Mi cuerpo vibra con el pulso del planeta. El metal no es rígido: es memoria en movimiento.", img:"imagenes/zuma.png"},
+      {id:"belaepona", nombre:"Bela Epona", elemento:"Metal", mensaje:"Fuerza que une velocidad y sabiduría. Quien me guía con respeto, conquista su destino.", img:"imagenes/belaepona.png"},
+      {id:"nyct", nombre:"Nyct", elemento:"Metal", mensaje:"Forjo puentes entre lo visible y lo oculto. El conocimiento también es una forma de amor.", img:"imagenes/nyct.png"},
+      {id:"ophius_m", nombre:"Ophius", elemento:"Metal", mensaje:"El círculo eterno gira dentro de ti. Lo que creas, te crea.", img:"imagenes/ophius.png"},
+      {id:"murgg", nombre:"Murgg", elemento:"Metal", mensaje:"Soy el guardián del metal. En mi reflejo, el valor se encuentra con la humildad.", img:"imagenes/murgg.png"},
+
+      // ☯ HÍBRIDOS
+      {id:"luminaris2", nombre:"Luminaris", elemento:"Híbridos", mensaje:"Mi luz no viene del sol, sino del interior de la materia. Soy la chispa que recuerda que todo respira.", img:"imagenes/luminarisevo.png"},
+      {id:"koralin", nombre:"Koralin", elemento:"Híbridos", mensaje:"Allí donde el fuego toca el agua, nace lo imposible. Soy la reconciliación de los mundos.", img:"imagenes/koralin.png"}
+    ];
+
+    const elCards = document.getElementById('cards');
+    const elEmpty = document.getElementById('empty');
+    const dlg = document.getElementById('dlg');
+    const dlgName = document.getElementById('dlgName');
+    const dlgEl = document.getElementById('dlgEl');
+    const dlgMsg = document.getElementById('dlgMsg');
+
+    let filtro = 'todos', query = '';
+
+    function render(){
+      elCards.innerHTML = '';
+      const list = DATA.filter(x=>{
+        const byEl = (filtro==='todos') || x.elemento===filtro;
+        const byQ  = !query || x.nombre.toLowerCase().includes(query);
+        return byEl && byQ;
+      });
+      elEmpty.hidden = list.length>0;
+
+      list.forEach(x=>{
+        const card = document.createElement('article');
+        card.className='card';
+
+        const th = document.createElement('div');
+        th.className='thumb';
+        const img = document.createElement('img');
+        img.src = x.img;
+        img.alt = x.nombre;
+        img.loading = 'lazy';
+        th.append(img);
+
+        const meta = document.createElement('div'); meta.className='meta';
+        const n = document.createElement('div'); n.className='name'; n.textContent=x.nombre;
+        const p = document.createElement('span'); p.className='pill'; p.textContent=x.elemento;
+        const b = document.createElement('button'); b.className='btn'; b.textContent='Ver mensaje';
+        b.onclick=()=>{ dlgName.textContent=x.nombre; dlgEl.textContent=x.elemento; dlgMsg.textContent='“'+x.mensaje+'”'; dlg.showModal(); };
+
+        meta.append(n,p,b);
+        card.append(th,meta);
+        elCards.append(card);
+      });
+    }
+
+    document.querySelectorAll('.chip').forEach(ch=>{
+      ch.addEventListener('click', ()=>{
+        document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+        ch.classList.add('active');
+        filtro = ch.dataset.filter;
+        render();
+      });
+    });
+
+    document.getElementById('q').addEventListener('input', e=>{
+      query = e.target.value.trim().toLowerCase();
+      render();
+    });
+
+    function openDlg(x){
+  dlgName.textContent = x.nombre;
+  dlgEl.textContent = x.elemento;
+  dlgMsg.textContent = `“${x.mensaje}”`;
+  dlg.showModal();
+}
+
+document.querySelectorAll('.chip').forEach(ch=>{
+  ch.addEventListener('click', ()=>{
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    ch.classList.add('active');
+    filtro = ch.dataset.filter;
+    render();
+  });
+});
+
+document.getElementById('q').addEventListener('input', e=>{
+  query = e.target.value.trim().toLowerCase();
+  render();
+});
+
+
+// arranque
+render();
+</script>
+
+<noscript style="color:#ffd24a;display:block;padding:12px">
+  Activá JavaScript para cargar el header y el footer compartidos.
+</noscript>
+</body>
+</html>
+<!-- footer.html -->
+
